@@ -1,9 +1,11 @@
+from copy import copy
+
 import pygame
 from .constants import *
 from .piece import Piece
 
 
-class Board():
+class Board:
     def __init__(self):
         self.board = []
         self.black_left = self.white_left = 16
@@ -31,12 +33,12 @@ class Board():
         self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
         piece.move(row, col)
 
-        if row == ROWS - 1 or row == 0:
+        if row == ROWS - 1 and piece.color == WHITE:
             piece.make_king()
-            if piece.color == WHITE:
-                self.white_kings += 1
-            else:
-                self.black_kings += 1
+            self.white_kings += 1
+        if row == 0 and piece.color == BLACK:
+            piece.make_king()
+            self.black_kings += 1
 
     def get_piece(self, row, col):
         return self.board[row][col]
@@ -47,7 +49,7 @@ class Board():
             for col in range(row % 2, COLS, 2):
                 pygame.draw.rect(win, LIGHT_GREY, (row * SQUARE_SIZE, col * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
-    def draw_valid_moves(self, win,  moves):
+    def draw_valid_moves(self, win, moves):
         for move in moves:
             row, col = move
             pygame.draw.circle(win, BLUE,
@@ -58,9 +60,9 @@ class Board():
         for row in range(ROWS):
             self.board.append([])
             for col in range(COLS):
-                if 0 < row and row < 3:
+                if 0 < row < 3:
                     self.board[row].append(Piece(row, col, WHITE))
-                elif 4 < row and row < 7:
+                elif 4 < row < 7:
                     self.board[row].append(Piece(row, col, BLACK))
                 else:
                     self.board[row].append(0)
@@ -74,78 +76,60 @@ class Board():
                     piece.draw(win)
         self.draw_valid_moves(win, valid_moves)
 
+    def is_valid_position(self, row, col):
+        if 0 <= row < ROWS and COLS > col >= 0:
+            return True
+        return False
+
     def get_valid_moves(self, piece):
         moves = {}
-        left = piece.col - 1
-        right = piece.col + 1
+        col = piece.col
         row = piece.row
-
-        if piece.color == BLACK or piece.king:
-            moves.update(self._traverse_left(row - 1, max(row - 3, -1), -1, piece.color, left))
-            moves.update(self._traverse_right(row - 1, max(row - 3, -1), -1, piece.color, right))
-        if piece.color == WHITE or piece.king:
-            moves.update(self._traverse_left(row + 1, min(row + 3, ROWS), 1, piece.color, left))
-            moves.update(self._traverse_right(row + 1, min(row + 3, ROWS), 1, piece.color, right))
-
+        moves.update(self._move(row, col, piece))
         return moves
 
-    def _traverse_left(self, start, stop, step, color, left, skipped=[]):
+    def _move(self, row, col, piece, capture=False, leap=False, last=None):
+        if last == None:
+            last = []
+        directions = {WHITE: [(row, col + 1), (row, col - 1), (row + 1, col)],
+                      BLACK: [(row, col + 1), (row, col - 1), (row - 1, col)],
+                      'king': [(row, col + 1), (row, col - 1), (row - 1, col), (row + 1, col)]}
         moves = {}
-        last = []
-        for r in range(start, stop, step):
-            if left < 0:
-                break
-            current = self.get_piece(r, left)
-            if current == 0:
-                if skipped and not last:
-                    break
-                elif skipped:
-                    moves[(r, left)] = last + skipped
-                else:
-                    moves[(r, left)] = last
+        if piece.king:
+            directions = directions['king']
+        else:
+            directions = directions[piece.color]
 
-                if last:
-                    if step == -1:
-                        row = max(r - 3, 0)
-                    else:
-                        row = min(r + r, ROWS)
-                    moves.update(self._traverse_left(r + step, row, step, color, left - 1, skipped=last))
-                    moves.update(self._traverse_right(r + step, row, step, color, left + 1, skipped=last))
-                break
-            elif current.color == color:
-                break
-            else:
-                last = [current]
-            left -= 1
-        return moves
-
-    def _traverse_right(self, start, stop, step, color, right, skipped=[]):
-        moves = {}
-        last = []
-        for r in range(start, stop, step):
-            if right >= COLS:
-                break
-
-            current = self.get_piece(r, right)
-            if current == 0:
-                if skipped and not last:
-                    break
-                elif skipped:
-                    moves[(r, right)] = last + skipped
-                else:
-                    moves[(r, right)] = last
-
-                if last:
-                    if step == -1:
-                        row = max(r - 3, 0)
-                    else:
-                        row = min(r + 3, ROWS)
-                    moves.update(self._traverse_left(r + step, row, step, color, right - 1, skipped=last))
-                    moves.update(self._traverse_right(r + step, row, step, color, right + 1, skipped=last))
-                break
-            elif current.color == color:
-                break
-            else:
-                last = [current]
-            right += 1
+        for r, c in directions:
+            if self.is_valid_position(r, c):
+                p = self.get_piece(r, c)
+                next_r, next_c = (r - (row - r), c - (col - c))
+                if p == 0:
+                    if not leap and not capture:
+                        moves[(r, c)] = p
+                elif self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0 and p not in last:
+                    if capture and p.color != piece.color:
+                        last.append(p)
+                        moves[(next_r, next_c)] = copy(last)
+                        moves.update(self._move(next_r, next_c, piece, True, False, last))
+                    elif leap and p.color == piece.color:
+                        last.append(p)
+                        moves[(next_r, next_c)] = copy(last)
+                        moves.update(self._move(next_r, next_c, piece, False, True, last))
+                    elif not capture and not leap:
+                        last.append(p)
+                        moves[(next_r, next_c)] = copy(last)
+                        moves.update(self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, last))
+        if piece.color == WHITE:
+            r, c = (row - 1, col)
+        else:
+            r, c = (row + 1, col)
+        if not piece.king and self.is_valid_position(r, c):
+            p = self.get_piece(r, c)
+            next_r, next_c = (r - (row - r), c - (col - c))
+            if self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0\
+                    and p != 0 and p not in last and p.color != piece.color:
+                last.append(p)
+                moves[(next_r, next_c)] = copy(last)
+                moves.update(self._move(next_r, next_c, piece, True, False, last))
         return moves

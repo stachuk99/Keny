@@ -24,7 +24,7 @@ def main():
     while run:
         clock.tick(FPS)
 
-        if game.winner() != None:
+        if game.winner() is not None:
             print(game.winner())
 
         for event in pygame.event.get():
