@@ -19,6 +19,7 @@ class Game:
         self.board = Board()
         self.turn = WHITE
         self.valid_moves = {}
+        self.turns_without_capture = 0
 
     def reset(self):
         self._init()
@@ -43,9 +44,15 @@ class Game:
         if self.selected and piece == 0 and (row, col) in self.valid_moves:
             self.board.move(self.selected, row, col)
             skipped = self.valid_moves[(row, col)]
-            if skipped and skipped != [[]]:
+            if skipped:
                 skipped = filter(lambda x: x != 0 and x.color != self.selected.color, skipped)
+                self.turns_without_capture = 0
                 self.board.remove(skipped)
+            else:
+                self.turns_without_capture += 1
+                if self.turns_without_capture >= 10:
+                    self.board.tie = "DRAW"
+
             self.change_turn()
         else:
             return False

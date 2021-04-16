@@ -10,6 +10,7 @@ class Board:
         self.board = []
         self.black_left = self.white_left = 16
         self.black_kings = self.white_kings = 0
+        self.tie = None
         self.create_board()
 
     def remove(self, pieces):
@@ -22,10 +23,12 @@ class Board:
                     self.white_left -= 1
 
     def winner(self):
-        if self.white_left <= 0:
-            return WHITE
+        if self.tie:
+            return self.tie
+        elif self.white_left <= 0:
+            return 'BLACK'
         elif self.black_left <= 0:
-            return BLACK
+            return 'WHITE'
         else:
             return None
 
