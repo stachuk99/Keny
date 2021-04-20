@@ -46,6 +46,10 @@ class Board:
     def get_piece(self, row, col):
         return self.board[row][col]
 
+    def get_all_pieces(self, color):
+        x = [item for subl in self.board for item in subl if item != 0 and item.color == color]
+        return x
+
     def draw_squares(self, win):
         win.fill(BLACK)
         for row in range(ROWS):
@@ -109,7 +113,7 @@ class Board:
                 next_r, next_c = (r - (row - r), c - (col - c))
                 if p == 0:
                     if not leap and not capture:
-                        moves[(r, c)] = p
+                        moves[(r, c)] = [p]
                 elif self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0 and p not in last:
                     if capture and p.color != piece.color:
                         last.append(p)
@@ -123,6 +127,7 @@ class Board:
                         last.append(p)
                         moves[(next_r, next_c)] = copy(last)
                         moves.update(self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, last))
+                    last.clear()
         if piece.color == WHITE:
             r, c = (row - 1, col)
         else:

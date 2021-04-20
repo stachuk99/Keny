@@ -35,4 +35,7 @@ class Piece:
             win.blit(CROWN, (self.x - CROWN.get_width() // 2, self.y - CROWN.get_height() // 2))
 
     def __repr__(self):
-        return str(self.color)
+        if self.color == WHITE:
+            return "W-" + str(self.row) + "-" + str(self.col)
+        else:
+            return "B-" + str(self.row) + "-" + str(self.col)
