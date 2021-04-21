@@ -1,8 +1,8 @@
 from copy import copy
 
-import pygame
 from .constants import *
 from .piece import Piece
+from .move import move
 
 
 class Board:
@@ -58,7 +58,7 @@ class Board:
 
     def draw_valid_moves(self, win, moves):
         for move in moves:
-            row, col = move
+            row, col = move.destination
             pygame.draw.circle(win, BLUE,
                                (col * SQUARE_SIZE + SQUARE_SIZE // 2, row * SQUARE_SIZE + SQUARE_SIZE // 2),
                                SQUARE_SIZE * 0.2)
@@ -88,12 +88,30 @@ class Board:
             return True
         return False
 
+    def get_mandatory_moves(self, color):
+        all_pieces = self.get_all_pieces(color)
+        mandatory_moves = []
+        for p in all_pieces:
+            moves = self.get_valid_moves(p)
+            for move in moves:
+                if move.captured and move.captured[0].color != color:
+                    mandatory_moves.append(move)
+        return mandatory_moves
+
+    def get_all_moves(self, color):
+        all_pieces = self.get_all_pieces(color)
+        all_moves = []
+        for p in all_pieces:
+            moves = self.get_valid_moves(p)
+            all_moves.append(*moves)
+        return all_moves
+
     def get_valid_moves(self, piece):
-        moves = {}
         col = piece.col
         row = piece.row
-        moves.update(self._move(row, col, piece))
+        moves = self._move(row, col, piece)
         return moves
+
 
     def _move(self, row, col, piece, capture=False, leap=False, last=None):
         if last == None:
@@ -101,7 +119,7 @@ class Board:
         directions = {WHITE: [(row, col + 1), (row, col - 1), (row + 1, col)],
                       BLACK: [(row, col + 1), (row, col - 1), (row - 1, col)],
                       'king': [(row, col + 1), (row, col - 1), (row - 1, col), (row + 1, col)]}
-        moves = {}
+        moves = []
         if piece.king:
             directions = directions['king']
         else:
@@ -113,20 +131,20 @@ class Board:
                 next_r, next_c = (r - (row - r), c - (col - c))
                 if p == 0:
                     if not leap and not capture:
-                        moves[(r, c)] = [p]
+                        moves.append(move(piece, (r,c), None))
                 elif self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0 and p not in last:
                     if capture and p.color != piece.color:
                         last.append(p)
-                        moves[(next_r, next_c)] = copy(last)
-                        moves.update(self._move(next_r, next_c, piece, True, False, last))
+                        moves.append(move(piece, (next_r, next_c), copy(last)))
+                        moves += self._move(next_r, next_c, piece, True, False, last)
                     elif leap and p.color == piece.color:
                         last.append(p)
-                        moves[(next_r, next_c)] = copy(last)
-                        moves.update(self._move(next_r, next_c, piece, False, True, last))
+                        moves.append(move(piece, (next_r, next_c), copy(last)))
+                        moves += self._move(next_r, next_c, piece, False, True, last)
                     elif not capture and not leap:
                         last.append(p)
-                        moves[(next_r, next_c)] = copy(last)
-                        moves.update(self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, last))
+                        moves.append(move(piece, (next_r, next_c), copy(last)))
+                        moves += self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, last)
                     last.clear()
         if piece.color == WHITE:
             r, c = (row - 1, col)
@@ -138,6 +156,6 @@ class Board:
             if self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0\
                     and p != 0 and p not in last and p.color != piece.color:
                 last.append(p)
-                moves[(next_r, next_c)] = copy(last)
-                moves.update(self._move(next_r, next_c, piece, True, False, last))
+                moves.append(move(piece, (next_r, next_c), copy(last)))
+                moves += self._move(next_r, next_c, piece, True, False, last)
         return moves

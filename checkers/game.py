@@ -18,8 +18,8 @@ class Game:
         self.selected = None
         self.board = Board()
         self.turn = WHITE
-        self.valid_moves = {}
-        self.mandatory_moves = {}
+        self.valid_moves = []
+        self.mandatory_moves = []
         self.turns_without_capture = 0
 
     def reset(self):
@@ -35,36 +35,26 @@ class Game:
             piece = self.board.get_piece(row, col)
             if piece != 0 and piece.color == self.turn:
                 self.selected = piece
-                all_pieces = self.board.get_all_pieces(piece.color)
-                self.mandatory_moves = {}
-                for p in all_pieces:
-                    moves = self.board.get_valid_moves(p)
-                    for item in moves.items():
-                        if item[1][0] != 0 and item[1][0].color != piece.color :
-                            #self.mandatory_moves[p].append(((item[0][0], item[0][1]), item[1]))
-                            self.mandatory_moves.setdefault(p, []).append((item[0][0], item[0][1]))
+                self.mandatory_moves = self.board.get_mandatory_moves(piece.color)
                 self.valid_moves = self.board.get_valid_moves(piece)
                 if self.mandatory_moves:
-                    print(self.mandatory_moves.get(piece))
-                    if self.mandatory_moves.get(piece):
-                        x = self.mandatory_moves.get(piece)
-                        self.valid_moves = {item[0] : item[1] for item in self.valid_moves.items() if item[0] in self.mandatory_moves.get(piece)}
-                    else:
-                        self.valid_moves = []
-                        self.selected = None
+                    self.valid_moves = [x for x in self.valid_moves if x in self.mandatory_moves]
                 return True
 
         return False
 
+
     def _move(self, row, col):
         piece = self.board.get_piece(row, col)
-        if self.selected and piece == 0 and (row, col) in self.valid_moves:
+        move = False
+        for x in self.valid_moves:
+            if x.destination == (row, col):
+                move = x
+        if self.selected and piece == 0 and move:
             self.board.move(self.selected, row, col)
-            skipped = self.valid_moves[(row, col)]
-            if skipped:
-                skipped = filter(lambda x: x != 0 and x.color != self.selected.color, skipped)
+            if move.captured and move.captured[0].color != self.selected.color:
                 self.turns_without_capture = 0
-                self.board.remove(skipped)
+                self.board.remove(move.captured)
             else:
                 self.turns_without_capture += 1
                 if self.turns_without_capture >= 10:
@@ -77,7 +67,7 @@ class Game:
         return True
 
     def change_turn(self):
-        self.valid_moves = {}
+        self.valid_moves = []
         if self.turn == BLACK:
             self.turn = WHITE
         else:

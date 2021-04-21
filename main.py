@@ -2,7 +2,7 @@ import pygame
 import checkers.constants as c
 from checkers.board import Board
 from checkers.game import Game
-
+from MCTS import algorithm
 FPS = 60
 
 WIN = pygame.display.set_mode((c.WIDTH, c.HEIGHT))
@@ -20,12 +20,16 @@ def main():
     run = True
     clock = pygame.time.Clock()
     game = Game(WIN)
+    mtcs = algorithm.MCTS(c.WHITE)
 
     while run:
         clock.tick(FPS)
 
         if game.winner() is not None:
             print(game.winner())
+
+        #if game.turn == c.WHITE:
+         #   mtcs.move(game.board)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
