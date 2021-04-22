@@ -9,13 +9,14 @@ class Board:
     def __init__(self):
         self.board = []
         self.black_left = self.white_left = 16
-        self.black_kings = self.white_kings = 0
+        self.turns_without_capture = 0
         self.tie = None
         self.create_board()
 
     def remove(self, pieces):
-        for piece in pieces:
-            self.board[piece.row][piece.col] = 0
+        for r, c in pieces:
+            piece = self.get_piece(r, c)
+            self.board[r][c] = 0
             if piece != 0:
                 if piece.color == BLACK:
                     self.black_left -= 1
@@ -26,22 +27,36 @@ class Board:
         if self.tie:
             return self.tie
         elif self.white_left <= 0:
-            return 'BLACK'
+            return BLACK
         elif self.black_left <= 0:
-            return 'WHITE'
+            return WHITE
         else:
             return None
 
-    def move(self, piece, row, col):
-        self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
-        piece.move(row, col)
+    def move(self, move):
+        start_r, start_c = move.start
+        dest_r, dest_c = move.destination
+        piece = self.get_piece(start_r, start_c)
+        self.board[start_r][start_c] = 0
+        self.board[dest_r][dest_c] = piece
+        if move.captured:
+            if self.get_piece(*move.captured[0]).color != piece.color:
+                self.turns_without_capture = 0
+                self.remove(move.captured)
+            else:
+                self.turns_without_capture += 1
+                if self.turns_without_capture >= 10:
+                    self.tie = "DRAW"
+        else:
+            self.turns_without_capture += 1
+            if self.turns_without_capture >= 10:
+                self.tie = "DRAW"
 
-        if row == ROWS - 1 and piece.color == WHITE:
+        piece.move(dest_r, dest_c)
+        if dest_r == ROWS - 1 and piece.color == WHITE:
             piece.make_king()
-            self.white_kings += 1
-        if row == 0 and piece.color == BLACK:
+        if dest_r == 0 and piece.color == BLACK:
             piece.make_king()
-            self.black_kings += 1
 
     def get_piece(self, row, col):
         return self.board[row][col]
@@ -89,13 +104,11 @@ class Board:
         return False
 
     def get_mandatory_moves(self, color):
-        all_pieces = self.get_all_pieces(color)
+        moves = self.get_all_moves(color)
         mandatory_moves = []
-        for p in all_pieces:
-            moves = self.get_valid_moves(p)
-            for move in moves:
-                if move.captured and move.captured[0].color != color:
-                    mandatory_moves.append(move)
+        for move in moves:
+            if move.captured and self.get_piece(*move.captured[0]).color != color:
+                mandatory_moves.append(move)
         return mandatory_moves
 
     def get_all_moves(self, color):
@@ -103,7 +116,7 @@ class Board:
         all_moves = []
         for p in all_pieces:
             moves = self.get_valid_moves(p)
-            all_moves.append(*moves)
+            all_moves += moves
         return all_moves
 
     def get_valid_moves(self, piece):
@@ -112,9 +125,8 @@ class Board:
         moves = self._move(row, col, piece)
         return moves
 
-
     def _move(self, row, col, piece, capture=False, leap=False, last=None):
-        if last == None:
+        if last is None:
             last = []
         directions = {WHITE: [(row, col + 1), (row, col - 1), (row + 1, col)],
                       BLACK: [(row, col + 1), (row, col - 1), (row - 1, col)],
@@ -131,21 +143,20 @@ class Board:
                 next_r, next_c = (r - (row - r), c - (col - c))
                 if p == 0:
                     if not leap and not capture:
-                        moves.append(move(piece, (r,c), None))
-                elif self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0 and p not in last:
-                    if capture and p.color != piece.color:
-                        last.append(p)
-                        moves.append(move(piece, (next_r, next_c), copy(last)))
-                        moves += self._move(next_r, next_c, piece, True, False, last)
+                        moves.append(move((piece.row, piece.col), (r, c), None))
+                elif self.is_valid_position(next_r, next_c) and self.get_piece(next_r, next_c) == 0 and (
+                        r, c) not in last:
+                    l = copy(last)
+                    l.append((r, c))
+                    if capture and p.color != piece.color and not leap:
+                        moves.append(move((piece.row, piece.col), (next_r, next_c), l))
+                        moves += self._move(next_r, next_c, piece, True, False, l)
                     elif leap and p.color == piece.color:
-                        last.append(p)
-                        moves.append(move(piece, (next_r, next_c), copy(last)))
-                        moves += self._move(next_r, next_c, piece, False, True, last)
+                        moves.append(move((piece.row, piece.col), (next_r, next_c), l))
+                        moves += self._move(next_r, next_c, piece, False, True, l)
                     elif not capture and not leap:
-                        last.append(p)
-                        moves.append(move(piece, (next_r, next_c), copy(last)))
-                        moves += self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, last)
-                    last.clear()
+                        moves.append(move((piece.row, piece.col), (next_r, next_c), l))
+                        moves += self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, l)
         if piece.color == WHITE:
             r, c = (row - 1, col)
         else:
@@ -153,9 +164,10 @@ class Board:
         if not piece.king and self.is_valid_position(r, c):
             p = self.get_piece(r, c)
             next_r, next_c = (r - (row - r), c - (col - c))
-            if self.is_valid_position(next_r, next_c) and self.get_piece(next_r,next_c) == 0\
-                    and p != 0 and p not in last and p.color != piece.color:
-                last.append(p)
-                moves.append(move(piece, (next_r, next_c), copy(last)))
-                moves += self._move(next_r, next_c, piece, True, False, last)
+            if self.is_valid_position(next_r, next_c) and self.get_piece(next_r, next_c) == 0 \
+                    and p != 0 and (r, c) not in last and p.color != piece.color and not leap:
+                l = copy(last)
+                l.append((r, c))
+                moves.append(move((piece.row, piece.col), (next_r, next_c), l))
+                moves += self._move(next_r, next_c, piece, capture=True, leap=False, last=l)
         return moves

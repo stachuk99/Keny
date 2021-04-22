@@ -1,5 +1,11 @@
-import checkers.board
 from copy import deepcopy
+from checkers.constants import WHITE, BLACK
+
+RANDOM_TESTS = 10
+
+import random
+
+
 class MCTS:
 
     def __init__(self, color):
@@ -7,41 +13,43 @@ class MCTS:
         pass
 
     def move(self, board):
-        board = deepcopy(board)
+        moves_rating = []
         moves = board.get_mandatory_moves(self.color)
+        best_move = None
+        best_rate = 0
         if not moves:
             moves = board.get_all_moves(self.color)
         for move in moves:
-            pass
+            rate = 0
+            b = deepcopy(board)
+            b.move(move)
+            for i in range(RANDOM_TESTS):
+                rate += self._random_move(deepcopy(b), self.color, 0)
+            moves_rating.append((move, rate))
+            if rate > best_rate:
+                best_move = move
+                best_rate = rate
+        print(moves_rating)
+        return best_move
 
-    def random_move(self, board, color):
+    def _random_move(self, board, color, depht):
         if board.winner():
-            if board.winner == self.color:
+            x = board.winner()
+            if board.winner() == self.color:
                 return 1
-            elif board.winner == "DRAW":
+            elif board.winner() == "DRAW":
                 return 0.5
             else:
                 return 0
-        board = deepcopy(board)
-        moves = board.get_mandatory_moves(self.color)
+        moves = board.get_mandatory_moves(color)
         if not moves:
-            moves = board.get_all_moves(self.color)
-        '''
-        piece = self.board.get_piece(row, col)
-        if self.selected and piece == 0 and (row, col) in self.valid_moves:
-            self.board.move(self.selected, row, col)
-            skipped = self.valid_moves[(row, col)]
-            if skipped:
-                skipped = filter(lambda x: x != 0 and x.color != self.selected.color, skipped)
-                self.turns_without_capture = 0
-                self.board.remove(skipped)
-            else:
-                self.turns_without_capture += 1
-                if self.turns_without_capture >= 10:
-                    self.board.tie = "DRAW"
-
-            self.change_turn()
+            moves = board.get_all_moves(color)
+        if not moves:
+            print(" co xD")
+        move = random.choice(moves)
+        board.move(move)
+        if color == WHITE:
+            color = BLACK
         else:
-            return False
-
-        return True'''
+            color = WHITE
+        return self._random_move(board, color, depht + 1)
