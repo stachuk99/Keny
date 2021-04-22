@@ -18,10 +18,10 @@ class Board:
             piece = self.get_piece(r, c)
             self.board[r][c] = 0
             if piece != 0:
-                if piece.color == BLACK:
-                    self.black_left -= 1
-                if piece.color == WHITE:
+                if piece.is_white:
                     self.white_left -= 1
+                else:
+                    self.black_left -= 1
 
     def winner(self):
         if self.tie:
@@ -40,7 +40,7 @@ class Board:
         self.board[start_r][start_c] = 0
         self.board[dest_r][dest_c] = piece
         if move.captured:
-            if self.get_piece(*move.captured[0]).color != piece.color:
+            if self.get_piece(*move.captured[0]).is_white != piece.is_white:
                 self.turns_without_capture = 0
                 self.remove(move.captured)
             else:
@@ -53,16 +53,16 @@ class Board:
                 self.tie = "DRAW"
 
         piece.move(dest_r, dest_c)
-        if dest_r == ROWS - 1 and piece.color == WHITE:
+        if dest_r == ROWS - 1 and piece.is_white:
             piece.make_king()
-        if dest_r == 0 and piece.color == BLACK:
+        if dest_r == 0 and not piece.is_white:
             piece.make_king()
 
     def get_piece(self, row, col):
         return self.board[row][col]
 
-    def get_all_pieces(self, color):
-        x = [item for subl in self.board for item in subl if item != 0 and item.color == color]
+    def get_all_pieces(self, is_white):
+        x = [item for subl in self.board for item in subl if item != 0 and item.is_white == is_white]
         return x
 
     def draw_squares(self, win):
@@ -83,9 +83,9 @@ class Board:
             self.board.append([])
             for col in range(COLS):
                 if 0 < row < 3:
-                    self.board[row].append(Piece(row, col, WHITE))
+                    self.board[row].append(Piece(row, col, WHITE, True))
                 elif 4 < row < 7:
-                    self.board[row].append(Piece(row, col, BLACK))
+                    self.board[row].append(Piece(row, col, BLACK, False))
                 else:
                     self.board[row].append(0)
 
@@ -103,16 +103,18 @@ class Board:
             return True
         return False
 
-    def get_mandatory_moves(self, color):
-        moves = self.get_all_moves(color)
+    def get_mandatory_moves(self, is_white):
+        moves = self._get_all_moves(is_white)
         mandatory_moves = []
         for move in moves:
-            if move.captured and self.get_piece(*move.captured[0]).color != color:
+            if move.captured and self.get_piece(*move.captured[0]).is_white != is_white:
                 mandatory_moves.append(move)
+        if not mandatory_moves:
+            mandatory_moves = moves
         return mandatory_moves
 
-    def get_all_moves(self, color):
-        all_pieces = self.get_all_pieces(color)
+    def _get_all_moves(self, is_white):
+        all_pieces = self.get_all_pieces(is_white)
         all_moves = []
         for p in all_pieces:
             moves = self.get_valid_moves(p)
@@ -122,20 +124,17 @@ class Board:
     def get_valid_moves(self, piece):
         col = piece.col
         row = piece.row
-        moves = self._move(row, col, piece)
+        moves = self._move(row, col, piece, capture=False, leap=False, last=[])
         return moves
 
     def _move(self, row, col, piece, capture=False, leap=False, last=None):
-        if last is None:
-            last = []
-        directions = {WHITE: [(row, col + 1), (row, col - 1), (row + 1, col)],
-                      BLACK: [(row, col + 1), (row, col - 1), (row - 1, col)],
-                      'king': [(row, col + 1), (row, col - 1), (row - 1, col), (row + 1, col)]}
         moves = []
         if piece.king:
-            directions = directions['king']
+            directions = [(row, col + 1), (row, col - 1), (row - 1, col), (row + 1, col)]
+        elif piece.is_white:
+            directions = [(row, col + 1), (row, col - 1), (row + 1, col)]
         else:
-            directions = directions[piece.color]
+            directions = [(row, col + 1), (row, col - 1), (row - 1, col)]
 
         for r, c in directions:
             if self.is_valid_position(r, c):
@@ -148,16 +147,17 @@ class Board:
                         r, c) not in last:
                     l = copy(last)
                     l.append((r, c))
-                    if capture and p.color != piece.color and not leap:
+                    same_color = p.is_white == piece.is_white
+                    if capture and not same_color and not leap:
                         moves.append(move((piece.row, piece.col), (next_r, next_c), l))
                         moves += self._move(next_r, next_c, piece, True, False, l)
-                    elif leap and p.color == piece.color:
+                    elif leap and same_color:
                         moves.append(move((piece.row, piece.col), (next_r, next_c), l))
                         moves += self._move(next_r, next_c, piece, False, True, l)
                     elif not capture and not leap:
                         moves.append(move((piece.row, piece.col), (next_r, next_c), l))
-                        moves += self._move(next_r, next_c, piece, p.color != piece.color, p.color == piece.color, l)
-        if piece.color == WHITE:
+                        moves += self._move(next_r, next_c, piece, not same_color, same_color, l)
+        if piece.is_white:
             r, c = (row - 1, col)
         else:
             r, c = (row + 1, col)
@@ -165,7 +165,7 @@ class Board:
             p = self.get_piece(r, c)
             next_r, next_c = (r - (row - r), c - (col - c))
             if self.is_valid_position(next_r, next_c) and self.get_piece(next_r, next_c) == 0 \
-                    and p != 0 and (r, c) not in last and p.color != piece.color and not leap:
+                    and p != 0 and (r, c) not in last and p.is_white != piece.is_white and not leap:
                 l = copy(last)
                 l.append((r, c))
                 moves.append(move((piece.row, piece.col), (next_r, next_c), l))

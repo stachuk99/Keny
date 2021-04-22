@@ -39,7 +39,7 @@ class Game:
             piece = self.board.get_piece(row, col)
             if piece != 0 and piece.color == self.turn:
                 self.selected = piece
-                mandatory_moves = self.board.get_mandatory_moves(piece.color)
+                mandatory_moves = self.board.get_mandatory_moves(piece.is_white)
                 self.valid_moves = self.board.get_valid_moves(piece)
                 if mandatory_moves:
                     self.valid_moves = [x for x in self.valid_moves if x in mandatory_moves]

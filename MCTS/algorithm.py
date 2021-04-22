@@ -1,15 +1,15 @@
 from copy import deepcopy
 from checkers.constants import WHITE, BLACK
 
-RANDOM_TESTS = 10
+RANDOM_TESTS = 100
 
 import random
 
 
 class MCTS:
 
-    def __init__(self, color):
-        self.color = color
+    def __init__(self, is_white):
+        self.color = is_white
         pass
 
     def move(self, board):
@@ -17,14 +17,12 @@ class MCTS:
         moves = board.get_mandatory_moves(self.color)
         best_move = None
         best_rate = 0
-        if not moves:
-            moves = board.get_all_moves(self.color)
         for move in moves:
             rate = 0
             b = deepcopy(board)
             b.move(move)
             for i in range(RANDOM_TESTS):
-                rate += self._random_move(deepcopy(b), self.color, 0)
+                rate += self._random_move(deepcopy(b), self.color)
             moves_rating.append((move, rate))
             if rate > best_rate:
                 best_move = move
@@ -32,24 +30,22 @@ class MCTS:
         print(moves_rating)
         return best_move
 
-    def _random_move(self, board, color, depht):
+    def _random_move(self, board, color):
         if board.winner():
-            x = board.winner()
-            if board.winner() == self.color:
-                return 1
-            elif board.winner() == "DRAW":
-                return 0.5
-            else:
+            if board.winner() == WHITE:
+                if self.color:
+                    return 1
                 return 0
+            elif board.winner() == BLACK:
+                if self.color:
+                    return 0
+                return 1
+            else:
+                return 0.5
         moves = board.get_mandatory_moves(color)
         if not moves:
-            moves = board.get_all_moves(color)
-        if not moves:
-            print(" co xD")
+            return 0.5
         move = random.choice(moves)
         board.move(move)
-        if color == WHITE:
-            color = BLACK
-        else:
-            color = WHITE
-        return self._random_move(board, color, depht + 1)
+        color = not color
+        return self._random_move(board, color)

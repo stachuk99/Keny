@@ -5,13 +5,12 @@ from checkers.game import Game
 from MCTS import algorithm
 from copy import deepcopy
 import time
+
 FPS = 60
 
 WIN = pygame.display.set_mode((c.WIDTH, c.HEIGHT))
 pygame.display.set_caption('Keny')
 pygame.init()
-
-
 
 
 def get_row_col_from_mouse(pos):
@@ -25,7 +24,7 @@ def main():
     run = True
     clock = pygame.time.Clock()
     game = Game(WIN)
-    mtcs = algorithm.MCTS(c.WHITE)
+    mtcs = algorithm.MCTS(True)
     game.update()
     while run:
         clock.tick(FPS)
@@ -34,17 +33,21 @@ def main():
             print(game.winner())
             game.display_result(WIN)
             pygame.display.update()
-            while run:
+            wait_for_reset = True
+            while wait_for_reset:
                 clock.tick(FPS)
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN:
                         game.reset()
                         game.update()
                         pygame.display.update()
+                        wait_for_reset = False
+                    if event.type == pygame.QUIT:
+                        wait_for_reset = False
+                        run = False
 
         if game.turn == c.WHITE:
-           game.ai_move(mtcs.move(deepcopy(game.board)))
-
+            game.ai_move(mtcs.move(deepcopy(game.board)))
 
         else:
             for event in pygame.event.get():
@@ -54,11 +57,11 @@ def main():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = pygame.mouse.get_pos()
                     row, col = get_row_col_from_mouse(pos)
-
-                    game.select(row,col)
+                    game.select(row, col)
 
         game.update()
 
     pygame.quit()
-main()
 
+
+main()
