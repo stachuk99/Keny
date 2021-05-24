@@ -11,6 +11,7 @@ class Board:
         self.black_left = self.white_left = 16
         self.turns_without_capture = 0
         self.tie = None
+        self.turn = 0
         self.create_board()
 
     def remove(self, pieces):
@@ -34,6 +35,7 @@ class Board:
             return None
 
     def move(self, move):
+        self.turn += 1
         start_r, start_c = move.start
         dest_r, dest_c = move.destination
         piece = self.get_piece(start_r, start_c)
@@ -171,3 +173,11 @@ class Board:
                 moves.append(move((piece.row, piece.col), (next_r, next_c), l))
                 moves += self._move(next_r, next_c, piece, capture=True, leap=False, last=l)
         return moves
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            if self.board == other.board and self.turn == other.turn:
+                return True
+
+        else:
+            return False

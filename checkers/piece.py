@@ -39,3 +39,9 @@ class Piece:
             return "W-" + str(self.row) + "-" + str(self.col)
         else:
             return "B-" + str(self.row) + "-" + str(self.col)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.is_white == other.is_white
+        else:
+            return False
