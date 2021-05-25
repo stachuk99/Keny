@@ -6,8 +6,8 @@ import itertools
 import random
 import math
 
-RANDOM_TESTS = 80
-INITIAL_SIMULATION = 2
+RANDOM_TESTS = 5000
+N0 = 20
 
 
 
@@ -18,48 +18,31 @@ class MCTS:
         self.tree = None
         self.index = itertools.count(1)
 
-    # base on MTCS algoritm make best move
+    # return best move base on MTCS algorithm
     def move(self, board):
         moves = board.get_mandatory_moves(self.color)
 
         if self.tree is None:
-            self.tree = anytree.Node("root", children=[], board=None, move=None, wins=0, simulations=1, color=not self.color)
+            self.tree = anytree.Node("root", children=[], board=deepcopy(board), move=None, wins=0, simulations=0,
+                                     moves_left=moves, color=not self.color)
         else:
             self.tree = anytree.search.find_by_attr(self.tree,  name="board", value=board, maxlevel=3)
-            self.tree.parent = None
-            self.tree.move = None
-            self.tree.wins = 0
-            self.tree.simulations = 1
+            if self.tree is None:
+                self.tree = anytree.Node("root", children=[], board=deepcopy(board), move=None, wins=0, simulations=0,
+                                         moves_left=moves, color=not self.color)
+            else:
+                self.tree.parent = None
 
-        #self.tree = anytree.Node("root", children=[], board=None, move=None, wins=0, simulations=1,
-                                 #color=not self.color)
-        for pre, _, node in anytree.RenderTree(self.tree, maxlevel=2):
-            print(
-                "%s %s->(%s/%s --> %s%%)" % (pre, node.move, node.wins, node.simulations, node.wins / node.simulations))
+        for i in range(1, RANDOM_TESTS + 1):
+            selected_node = self._selection()
+            expansion_node = self._expansion(selected_node)
+            result = self._simulation(deepcopy(expansion_node.board), expansion_node.color)
+            self._back_propagation(expansion_node, result, 1)
 
-        for move in moves:
-            b = deepcopy(board)
-            b.move(move)
-            if not anytree.search.find_by_attr(self.tree, value=board, name="board", maxlevel=2):
-                node = anytree.Node(str(next(self.index)), parent=self.tree,
-                                    children=[], board=b, move=move, wins=0, simulations=0, color=self.color)
-
-                result = 0
-                for i in range(INITIAL_SIMULATION):
-                    result += self._simulation(deepcopy(b), self.color)
-                self._back_propagation(node, result, INITIAL_SIMULATION)
-
-        for _ in range(RANDOM_TESTS):
-            node = self._selection()
-            self._expansion(node)
-            for n in node.children:
-                result = 0
-                for i in range(INITIAL_SIMULATION):
-                    result += self._simulation(deepcopy(n.board), n.color)
-                self._back_propagation(n, result, INITIAL_SIMULATION)
-            print(_)
-            for pre, _, node in anytree.RenderTree(self.tree, maxlevel=2):
-                print("%s %s->(%s/%s --> %s%%)" % (pre, node.move, node.wins, node.simulations, node.wins / node.simulations))
+            if i % 100 == 0:
+                print(i)
+                for pre, _, node in anytree.RenderTree(self.tree, maxlevel=2):
+                    print("%s %s->(%s/%s --> %s%%)" % (pre, node.move, node.wins, node.simulations, node.wins / node.simulations))
 
         best_node = None
         max_simulations = 0
@@ -74,7 +57,10 @@ class MCTS:
     def _selection(self):
         node = self.tree
         best_node = node
-        while node.children:
+        i = 0
+        while not node.moves_left:
+            if node.board.winner():
+                return node
             best_result = -1
             nv = 0
             for c in node.children:
@@ -84,29 +70,35 @@ class MCTS:
                     best_node = c
                     best_result = c.wins / c.simulations + 1.41 * math.sqrt(math.log(nv) / c.simulations)
             node = best_node
+            i += 1
         return best_node
 
+    # expands tree if algorithm conditions are met
     def _expansion(self, node):
         if node.board.winner():
-            return None
+            return node
         else:
-            moves = node.board.get_mandatory_moves(not node.color)
-            for move in moves:
+            if node.simulations > N0:
+                move = node.moves_left.pop()
                 b = deepcopy(node.board)
                 b.move(move)
-                anytree.Node(str(next(self.index)), parent=node,
-                                    children=[], board=b, move=move, wins=0, simulations=0, color=not node.color)
+                moves_left = b.get_mandatory_moves(node.color)
+                node = anytree.Node(str(next(self.index)), parent=node, children=[],
+                             board=b, move=move, wins=0, simulations=0,moves_left=moves_left, color=not node.color)
+            return node
 
 
-    # updates nodes base on results
+    # updates nodes based on results
     def _back_propagation(self, node, result, simulations):
-        while node.parent:
+        while not node.is_root:
             node.simulations += simulations
             if node.color == self.color:
                 node.wins += result
             else:
                 node.wins += simulations - result
             node = node.parent
+        self.tree.simulations += simulations
+        self.tree.wins += simulations - result
 
     # plays a random game
     def _simulation(self, board, color):
