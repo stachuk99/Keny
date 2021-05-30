@@ -6,17 +6,18 @@ import itertools
 import random
 import math
 
-RANDOM_TESTS = 5000
 N0 = 20
 
 
 
 class MCTS:
 
-    def __init__(self, is_white):
-        self.color = is_white
+    def __init__(self, white, simulations):
+        self.color = white
         self.tree = None
+        self.RANDOM_TESTS = simulations * 10
         self.index = itertools.count(1)
+
 
     # return best move base on MTCS algorithm
     def move(self, board):
@@ -33,7 +34,7 @@ class MCTS:
             else:
                 self.tree.parent = None
 
-        for i in range(1, RANDOM_TESTS + 1):
+        for i in range(1, self.RANDOM_TESTS + 1):
             selected_node = self._selection()
             expansion_node = self._expansion(selected_node)
             result = self._simulation(deepcopy(expansion_node.board), expansion_node.color)
