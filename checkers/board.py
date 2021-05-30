@@ -12,6 +12,7 @@ class Board:
         self.turns_without_capture = 0
         self.tie = None
         self.turn = 0
+        self.last_move = None
         self.create_board()
 
     def remove(self, pieces):
@@ -36,6 +37,7 @@ class Board:
 
     def move(self, move):
         self.turn += 1
+        self.last_move = move
         start_r, start_c = move.start
         dest_r, dest_c = move.destination
         piece = self.get_piece(start_r, start_c)
@@ -67,13 +69,13 @@ class Board:
         x = [item for subl in self.board for item in subl if item != 0 and item.is_white == is_white]
         return x
 
-    def draw_squares(self, win):
+    def _draw_squares(self, win):
         win.fill(BLACK)
         for row in range(ROWS):
             for col in range(row % 2, COLS, 2):
                 pygame.draw.rect(win, LIGHT_GREY, (row * SQUARE_SIZE, col * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
-    def draw_valid_moves(self, win, moves):
+    def _draw_valid_moves(self, win, moves):
         for move in moves:
             row, col = move.destination
             pygame.draw.circle(win, BLUE,
@@ -92,13 +94,21 @@ class Board:
                     self.board[row].append(0)
 
     def draw(self, win, valid_moves):
-        self.draw_squares(win)
+        self._draw_squares(win)
+        self._draw_last_move(win)
+
         for row in range(ROWS):
             for col in range(COLS):
                 piece = self.board[row][col]
                 if piece != 0:
                     piece.draw(win)
-        self.draw_valid_moves(win, valid_moves)
+        self._draw_valid_moves(win, valid_moves)
+
+    def _draw_last_move(self, win):
+        if self.last_move:
+            pygame.draw.rect(win, LIGHT_GREEN, (self.last_move.destination[1] * SQUARE_SIZE, self.last_move.destination[0] * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            pygame.draw.rect(win, LIGHT_GREEN, (self.last_move.start[1] * SQUARE_SIZE, self.last_move.start[0] * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
 
     def is_valid_position(self, row, col):
         if 0 <= row < ROWS and COLS > col >= 0:

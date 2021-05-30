@@ -11,5 +11,6 @@ RED = (255, 40, 40)
 DARK_GREY = (128, 128, 128)
 LIGHT_GREY = (210, 210, 210)
 GOLD = (255, 215, 0)
+LIGHT_GREEN = (144, 238, 144)
 
 CROWN = pygame.transform.scale(pygame.image.load('assets/crown.png'), (int(SQUARE_SIZE * 0.4), int(SQUARE_SIZE * 0.3)))
