@@ -2,4 +2,5 @@ anytree==2.8.0
 llvmlite==0.36.0
 numpy==1.20.3
 pygame==2.0.1
+pygame-pgu==0.21
 six==1.16.0

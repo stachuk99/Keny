@@ -3,23 +3,18 @@ from checkers.constants import WHITE, BLACK
 
 import anytree
 import itertools
-import random
 import math
+import random
 import time
 
 N0 = 20
 
-
-
 class MCTS:
-
     def __init__(self, white, simulation_time):
         self.color = white
         self.tree = None
         self.simulation_time = simulation_time
         self.index = itertools.count(1)
-
-
 
     # return best move base on MTCS algorithm
     def move(self, board):
@@ -91,7 +86,6 @@ class MCTS:
                 node = anytree.Node(str(next(self.index)), parent=node, children=[],
                              board=b, move=move, wins=0, simulations=0,moves_left=moves_left, color=not node.color)
             return node
-
 
     # updates nodes based on results
     def _back_propagation(self, node, result, simulations):

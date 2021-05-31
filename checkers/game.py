@@ -44,7 +44,6 @@ class Game:
                 if mandatory_moves:
                     self.valid_moves = [x for x in self.valid_moves if x in mandatory_moves]
                 return True
-
         return False
 
     def _move(self, row, col):
@@ -55,16 +54,16 @@ class Game:
                 move = x
         if self.selected and piece == 0 and move:
             self.board.move(move)
-            self.change_turn()
+            self._change_turn()
         else:
             return False
         return True
 
     def ai_move(self, move):
         self.board.move(move)
-        self.change_turn()
+        self._change_turn()
 
-    def change_turn(self):
+    def _change_turn(self):
         self.valid_moves = []
         if self.turn == BLACK:
             self.turn = WHITE

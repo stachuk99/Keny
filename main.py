@@ -1,10 +1,9 @@
-import pgu
-import pygame
 import checkers.constants as c
-from checkers.board import Board
+import pygame
+
 from checkers.game import Game
-from MCTS import algorithm
 from copy import deepcopy
+from MCTS import algorithm
 from pgu import gui
 
 FPS = 60
@@ -18,6 +17,7 @@ black_player = True
 white_player_time = 30
 black_player_time = 30
 
+# configuration menu
 start_screen = gui.Desktop()
 start_screen.connect(gui.QUIT,start_screen.quit,None)
 
@@ -27,7 +27,6 @@ table.td(gui.Label("Czarny", font=TNR32), colspan=1)
 table.td(gui.Label("Biały", font=TNR32), colspan=3)
 
 table.tr()
-
 
 black_player_select = gui.Select(False, width=150, height=70, font=TNR32)
 black_player_select.add(gui.Label('Komputer',font=TNR32), True)
@@ -39,11 +38,9 @@ white_player_select.add(gui.Label('Komputer',font=TNR32), True)
 white_player_select.add(gui.Label('Gracz',font=TNR32), False)
 table.td(white_player_select, colspan=3)
 
-
 table.tr()
 table.td(gui.Label())
 table.tr()
-
 
 table.td(gui.Label("     Czas wyznaczania ruchu", font=TNR32), colspan=3)
 table.tr()
@@ -69,6 +66,7 @@ table.tr()
 table.td(gui.Label())
 table.tr()
 
+# assign selected values to variables an starts game
 def start_game():
     global white_player
     white_player = white_player_select.value
@@ -108,6 +106,8 @@ def main():
     if black_player:
         black_mcts = algorithm.MCTS(False, black_player_time)
     game.update()
+
+    # main loop
     while run:
         clock.tick(FPS)
 
