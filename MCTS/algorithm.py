@@ -5,6 +5,7 @@ import anytree
 import itertools
 import random
 import math
+import time
 
 N0 = 20
 
@@ -12,11 +13,12 @@ N0 = 20
 
 class MCTS:
 
-    def __init__(self, white, simulations):
+    def __init__(self, white, simulation_time):
         self.color = white
         self.tree = None
-        self.RANDOM_TESTS = simulations * 10
+        self.simulation_time = simulation_time
         self.index = itertools.count(1)
+
 
 
     # return best move base on MTCS algorithm
@@ -34,12 +36,14 @@ class MCTS:
             else:
                 self.tree.parent = None
 
-        for i in range(1, self.RANDOM_TESTS + 1):
+        start = time.time()
+        i = 0
+        while time.time() - start < self.simulation_time:
             selected_node = self._selection()
             expansion_node = self._expansion(selected_node)
             result = self._simulation(deepcopy(expansion_node.board), expansion_node.color)
             self._back_propagation(expansion_node, result, 1)
-
+            i += 1
             if i % 100 == 0:
                 print(i)
                 for pre, _, node in anytree.RenderTree(self.tree, maxlevel=2):

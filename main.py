@@ -6,7 +6,6 @@ from checkers.game import Game
 from MCTS import algorithm
 from copy import deepcopy
 from pgu import gui
-import time
 
 FPS = 60
 pygame.init()
