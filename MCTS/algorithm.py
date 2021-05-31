@@ -17,7 +17,7 @@ class MCTS:
         self.index = itertools.count(1)
 
     # return best move base on MTCS algorithm
-    def move(self, board):
+    def move(self, board, return_move):
         moves = board.get_mandatory_moves(self.color)
 
         if self.tree is None:
@@ -50,8 +50,8 @@ class MCTS:
             if n.simulations > max_simulations:
                 best_node = n
                 max_simulations = n.simulations
-
-        return best_node.move
+        return_move.append(best_node.move)
+        return
 
     # choose best node based on UCT
     def _selection(self):

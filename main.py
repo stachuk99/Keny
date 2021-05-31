@@ -1,3 +1,5 @@
+import threading
+
 import checkers.constants as c
 import pygame
 
@@ -106,11 +108,11 @@ def main():
     if black_player:
         black_mcts = algorithm.MCTS(False, black_player_time)
     game.update()
-
+    move = []
+    is_simulation_running = False
     # main loop
     while run:
         clock.tick(FPS)
-
         if game.winner() is not None:
             print(game.winner())
             game.display_result(WIN)
@@ -128,32 +130,45 @@ def main():
                         wait_for_reset = False
                         run = False
 
-        if game.turn == c.WHITE:
-            if white_mcts:
-                game.ai_move(white_mcts.move(deepcopy(game.board)))
+        if not is_simulation_running:
+            if game.turn == c.WHITE:
+                if white_mcts:
+                    t = threading.Thread(target=white_mcts.move, args=(deepcopy(game.board), move))
+                    t.daemon = True
+                    t.start()
+                    is_simulation_running = True
+                else:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            run = False
+
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            pos = pygame.mouse.get_pos()
+                            row, col = get_row_col_from_mouse(pos)
+                            game.select(row, col)
             else:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        run = False
+                if black_mcts:
+                    t = threading.Thread(target=black_mcts.move, args=(deepcopy(game.board), move))
+                    t.daemon = True
+                    t.start()
+                    is_simulation_running = True
+                else:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            run = False
 
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        pos = pygame.mouse.get_pos()
-                        row, col = get_row_col_from_mouse(pos)
-                        game.select(row, col)
-        else:
-            if black_mcts:
-                game.ai_move(black_mcts.move(deepcopy(game.board)))
-            else:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        run = False
-
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        pos = pygame.mouse.get_pos()
-                        row, col = get_row_col_from_mouse(pos)
-                        game.select(row, col)
-
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            pos = pygame.mouse.get_pos()
+                            row, col = get_row_col_from_mouse(pos)
+                            game.select(row, col)
+        elif move:
+            game.ai_move(move.pop())
+            is_simulation_running = False
+        pygame.event.pump()
         game.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
 
     pygame.quit()
 
