@@ -186,7 +186,7 @@ class Board:
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            if self.board == other.board and self.turn == other.turn:
+            if self.board == other.board and self.turn == other.turn and self.last_move == other.last_move:
                 return True
 
         else:

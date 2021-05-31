@@ -7,7 +7,7 @@ import math
 import random
 import time
 
-N0 = 20
+N0 = 15
 
 class MCTS:
     def __init__(self, white, simulation_time):

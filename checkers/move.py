@@ -7,7 +7,7 @@ class move:
         self.captured = captured
 
     def __eq__(self, other):
-        if self.start == other.start and self.destination == other.destination:
+        if self.start == other.start and self.destination == other.destination and self.captured == other.captured:
             return True
         else:
             return False
