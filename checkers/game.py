@@ -1,3 +1,5 @@
+import time
+
 from .constants import *
 from .board import Board
 import pygame
@@ -5,15 +7,20 @@ import pygame
 pygame.init()
 font72 = pygame.font.SysFont('timesnewroman', 72)
 font48 = pygame.font.SysFont('timesnewroman', 48)
-
+TNR32=pygame.font.SysFont('timesnewroman', 32)
 
 class Game:
     def __init__(self, win):
         self._init()
         self.win = win
+        self.turn_time = time.time()
 
     def update(self):
         self.board.draw(self.win, self.valid_moves)
+        time_text = TNR32.render(str(int(time.time() - self.turn_time)), True, GOLD)
+        time_text_rec = time_text.get_rect()
+        time_text_rec.center = (WIDTH - 25, 25)
+        self.win.blit(time_text, time_text_rec)
         pygame.display.update()
 
     def winner(self):
@@ -53,6 +60,7 @@ class Game:
                 move = x
         if self.selected and piece == 0 and move:
             self.board.move(move)
+            self.turn_time = time.time()
             self._change_turn()
         else:
             return False
@@ -60,6 +68,7 @@ class Game:
 
     def ai_move(self, move):
         self.board.move(move)
+        self.turn_time = time.time()
         self._change_turn()
 
     def _change_turn(self):
