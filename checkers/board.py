@@ -115,25 +115,21 @@ class Board:
             return True
         return False
 
-    def get_mandatory_moves(self, is_white):
-        moves = self._get_all_moves(is_white)
+    def get_moves(self, color):
+        all_pieces = self.get_all_pieces(color)
+        moves = []
+        for p in all_pieces:
+            temp_moves = self._get_valid_moves(p)
+            moves += temp_moves
         mandatory_moves = []
         for move in moves:
-            if move.captured and self.get_piece(*move.captured[0]).is_white != is_white:
+            if move.captured and self.get_piece(*move.captured[0]).is_white != color:
                 mandatory_moves.append(move)
         if not mandatory_moves:
             mandatory_moves = moves
         return mandatory_moves
 
-    def _get_all_moves(self, is_white):
-        all_pieces = self.get_all_pieces(is_white)
-        all_moves = []
-        for p in all_pieces:
-            moves = self.get_valid_moves(p)
-            all_moves += moves
-        return all_moves
-
-    def get_valid_moves(self, piece):
+    def _get_valid_moves(self, piece):
         col = piece.col
         row = piece.row
         moves = self._move(row, col, piece, capture=False, leap=False, last=[])

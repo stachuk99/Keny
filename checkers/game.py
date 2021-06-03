@@ -24,7 +24,6 @@ class Game:
         self.board = Board()
         self.turn = WHITE
         self.valid_moves = []
-        self.turns_without_capture = 0
 
     def reset(self):
         self._init()
@@ -39,8 +38,8 @@ class Game:
             piece = self.board.get_piece(row, col)
             if piece != 0 and piece.color == self.turn:
                 self.selected = piece
-                mandatory_moves = self.board.get_mandatory_moves(piece.is_white)
-                self.valid_moves = self.board.get_valid_moves(piece)
+                mandatory_moves = self.board.get_moves(piece.is_white)
+                self.valid_moves = self.board._get_valid_moves(piece)
                 if mandatory_moves:
                     self.valid_moves = [x for x in self.valid_moves if x in mandatory_moves]
                 return True

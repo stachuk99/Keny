@@ -10,6 +10,7 @@ from pgu import gui
 
 FPS = 60
 pygame.init()
+pygame.display.set_caption('Keny')
 
 TNR32=pygame.font.SysFont('timesnewroman', 32)
 TNR36=pygame.font.SysFont('timesnewroman', 36)
@@ -20,7 +21,8 @@ white_player_time = 30
 black_player_time = 30
 
 # configuration menu
-start_screen = gui.Desktop()
+start_screen = gui.Desktop(name='Keny')
+
 start_screen.connect(gui.QUIT,start_screen.quit,None)
 
 table = gui.Table(x=0, y=0, font=TNR32)
@@ -80,7 +82,7 @@ def start_game():
     black_player_time = black_time_select.value
     start_screen.quit()
 
-w = gui.Button(value=gui.Label('Rozpocznij gre',font=TNR36), width=200, height=100)
+w = gui.Button(value=gui.Label('Rozpocznij grę',font=TNR36), width=200, height=100)
 w.connect(gui.CLICK, start_game)
 table.td(w, colspan=6)
 
@@ -88,7 +90,7 @@ start_screen.init(table)
 start_screen.run()
 
 WIN = pygame.display.set_mode((c.WIDTH, c.HEIGHT))
-pygame.display.set_caption('Keny')
+
 
 def get_row_col_from_mouse(pos):
     x, y = pos

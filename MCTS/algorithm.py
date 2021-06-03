@@ -18,7 +18,7 @@ class MCTS:
 
     # return best move base on MTCS algorithm
     def move(self, board, return_move):
-        moves = board.get_mandatory_moves(self.color)
+        moves = board.get_moves(self.color)
 
         if self.tree is None:
             self.tree = anytree.Node("root", children=[], board=deepcopy(board), move=None, wins=0, simulations=0,
@@ -82,7 +82,7 @@ class MCTS:
                 move = node.moves_left.pop()
                 b = deepcopy(node.board)
                 b.move(move)
-                moves_left = b.get_mandatory_moves(node.color)
+                moves_left = b.get_moves(node.color)
                 node = anytree.Node(str(next(self.index)), parent=node, children=[],
                              board=b, move=move, wins=0, simulations=0,moves_left=moves_left, color=not node.color)
             return node
@@ -112,7 +112,7 @@ class MCTS:
                 return 1
             else:
                 return 0.5
-        moves = board.get_mandatory_moves(color)
+        moves = board.get_moves(color)
         if not moves:
             return 0.5
         move = random.choice(moves)
